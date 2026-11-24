@@ -1000,13 +1000,13 @@ function send(){
  var link=waLink(wrows);
  var data={'form-name':'pre-diagnostico',Protocolo:proto,Cliente:A.nome,WhatsApp:A.tel,Horario:A.hora||'Qualquer horário',Equipamento:D.e,Problema:D.pr+(D.q?' (desde: '+D.q+')':''),Respostas:ans.map(function(r){return '• '+r[0]+': '+r[1];}).join('\n')+(D.u?'\n• Uso: '+D.u:''),Observacoes:D.o||'Nenhuma',Ficha:ficha};
  var enc=Object.keys(data).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(data[k]);}).join('&');
- if(!window.TG_PREVIEW){try{fetch('/',{method:'POST',keepalive:true,headers:{'Content-Type':'application/x-www-form-urlencoded'},body:enc}).catch(function(){});}catch(x){}}
+ if(!window.TG_PREVIEW){try{fetch(/netlify\.app$/.test(location.hostname)?'/':'/api/pre-diagnostico',{method:'POST',keepalive:true,headers:{'Content-Type':'application/x-www-form-urlencoded'},body:enc}).catch(function(){});}catch(x){}}
  A.link=link;A.proto=proto;window.TG_LAST_FICHA=ficha; try{window.open(link,'_blank','noopener');}catch(x){}
  steps.splice(i+1,0,{id:'ok'});go(1);
 }
 back.onclick=function(){go(-1);};
 window.TG_START=function(k){A={prob:k};if(PROBLEMS[k].grp==='imp')A.equip='impressora';build();i=0;go(1);};
-window.TG_PREVIEW=!/netlify\.app$|sanaythle/.test(location.hostname);
+window.TG_PREVIEW=location.protocol==='file:'||/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
 steps=[{id:'prob'}];render();
 })();
 </script>

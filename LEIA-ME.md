@@ -14,11 +14,30 @@
 
 Abrir o `index.html` com dois cliques também funciona, mas o envio do pré-diagnóstico só funciona no site publicado.
 
-## Publicar no Netlify
+## Publicar na Vercel
 
-No painel do Netlify, abra o site **sanaythle-informatica**, vá em **Deploys** e arraste a pasta `site` para a área de upload.
+O projeto já está configurado (`vercel.json`): a Vercel publica a pasta `site` e não precisa de build.
 
-O formulário do pré-diagnóstico (`pre-diagnostico`) e a página `ficha.html` continuam iguais, então os e-mails de aviso do Netlify Forms seguem chegando.
+1. Entre em https://vercel.com com a sua conta do GitHub.
+2. **Add New… > Project**, escolha o repositório **site-sandro** e clique em **Import**.
+3. Em **Framework Preset**, deixe **Other**. Não mude mais nada e clique em **Deploy**.
+4. Depois disso, cada envio para o GitHub (branch `main`) atualiza o site sozinho.
+
+### E-mail do pré-diagnóstico na Vercel
+
+No Netlify, os pedidos chegavam por e-mail pelo Netlify Forms, que não existe na Vercel. Na Vercel, quem envia o e-mail é a função `api/pre-diagnostico.js`, usando o serviço Resend (tem plano grátis):
+
+1. Crie uma conta em https://resend.com com o e-mail **sanaythleti@gmail.com** e gere uma **API Key**.
+2. Na Vercel, abra o projeto > **Settings > Environment Variables** e adicione `RESEND_API_KEY` com essa chave.
+3. Faça um novo deploy (**Deployments > ... > Redeploy**).
+
+Sem essa chave o site funciona normalmente e o cliente é levado ao WhatsApp com a mensagem pronta, mas o e-mail de aviso não é enviado. Opcional: `FORM_TO` muda o e-mail que recebe os pedidos e `FORM_FROM` muda o remetente (no plano grátis do Resend, sem domínio próprio, o e-mail só pode ir para o dono da conta).
+
+Depois de publicar, troque o endereço `sanaythle-informatica.netlify.app` pelo novo endereço da Vercel em `site/index.html` (linhas `canonical` e `og:`), `site/robots.txt` e `site/sitemap.xml`.
+
+## Publicar no Netlify (continua funcionando)
+
+No painel do Netlify, abra o site **sanaythle-informatica**, vá em **Deploys** e arraste a pasta `site` para a área de upload. Lá, os pedidos do pré-diagnóstico continuam chegando pelo Netlify Forms.
 
 ## O que mudou
 
