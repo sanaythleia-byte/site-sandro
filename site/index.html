@@ -316,11 +316,37 @@ textarea.tg-input{min-height:120px;resize:vertical}
 .tg-btn.tg-wa:hover{background:var(--verde-esc)}
 .tg-btn.ghost{background:transparent;color:var(--muted);text-decoration:underline;padding:0 8px}
 .tg-btn.outline{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}
-.tg-sum{background:var(--soft);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:4px 0 6px}
-.tg-sum dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:8px 16px;font-size:15px}
+.tg-sum{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:4px 18px;margin:20px 0 0}
+.tg-sum summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;font-weight:650;font-size:15px;color:var(--tinta)}
+.tg-sum summary::-webkit-details-marker{display:none}
+.tg-sum summary span{font-weight:500;color:var(--muted);margin-right:auto}
+.tg-sum summary::after{content:"";flex-shrink:0;width:8px;height:8px;border-right:2px solid var(--azul);border-bottom:2px solid var(--azul);transform:rotate(45deg) translateY(-2px);transition:transform .2s}
+.tg-sum[open] summary::after{transform:rotate(-135deg)}
+.tg-sum dl{margin:0 0 8px;font-size:15px}
+.tg-row{display:grid;grid-template-columns:minmax(110px,32%) 1fr auto;gap:2px 14px;align-items:baseline;padding:9px 0;border-top:1px solid var(--line)}
 .tg-sum dt{color:var(--muted)}
 .tg-sum dd{margin:0;font-weight:600;color:var(--tinta);overflow-wrap:anywhere}
-@media (max-width:420px){.tg-sum dl{grid-template-columns:1fr;gap:2px}.tg-sum dd{margin-bottom:8px}}
+.tg-edit{background:none;border:0;padding:6px 2px;min-height:36px;font:600 14px var(--font);color:var(--azul);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+@media (max-width:460px){.tg-row{grid-template-columns:1fr auto}.tg-row dd{grid-column:1/-1;grid-row:2}}
+.tg-chips{display:flex;flex-wrap:wrap;gap:8px}
+.tg-chip{min-height:44px;padding:0 16px;border-radius:99px;border:1.5px solid var(--line);background:#fff;font:500 15px var(--font);color:var(--ink);cursor:pointer;transition:border-color .15s,background .15s,color .15s}
+.tg-chip:hover{border-color:#A9C4EC;background:#F7FAFF}
+.tg-chip[aria-pressed="true"]{border-color:var(--blue);background:var(--blue);color:#fff}
+.tg-label .opt{font-weight:500;color:var(--muted)}
+.tg-help{font-size:13px;color:var(--muted);margin:6px 0 0}
+.tg-err{margin:6px 0 0;font-size:14px;font-weight:600;color:#B91C1C}
+.tg-err:empty{display:none}
+.tg-input[aria-invalid="true"]{border-color:#DC2626;box-shadow:0 0 0 4px rgba(220,38,38,.1)}
+.tg-check input[aria-invalid="true"]{outline:2px solid #DC2626;outline-offset:2px}
+.tg-fields{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+@media (max-width:560px){.tg-fields{grid-template-columns:1fr}}
+.tg-opt.single[aria-pressed="true"]{box-shadow:0 0 0 3px rgba(20,99,214,.15)}
+.tg-resume{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:center;justify-content:space-between;padding:16px 18px;margin:0 0 22px;border-radius:12px;background:var(--azul-claro);border:1px solid #C9DBF7}
+.tg-resume b{display:block;color:var(--tinta)}
+.tg-resume span{font-size:14px;color:var(--muted)}
+.tg-resume-act{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.tg-btn.sm{min-height:44px;padding:0 18px}
+.tg-btn.tg-send:disabled{opacity:.75;cursor:wait}
 .tg-check{display:flex;gap:12px;align-items:flex-start;margin-top:18px;font-size:14px;color:var(--muted);cursor:pointer}
 .tg-check input{width:20px;height:20px;margin-top:1px;accent-color:var(--blue);flex-shrink:0}
 .tg-ok{text-align:center;padding:12px 0}
@@ -754,6 +780,8 @@ footer .brand img{width:34px;background:#fff;border-radius:8px;padding:3px}
 (function(){
 var WA_NUM='5591988889480';
 var IDK='Não sei';
+var SAVE_KEY='sanaythle_pd',CONTACT_KEY='sanaythle_contato';
+var WA_SVG='<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-wa" fill="currentColor"/></svg>';
 
 /* ---------- Perguntas ---------- */
 var PROBLEMS={
@@ -815,62 +843,91 @@ var BRANDS={
 };
 var EQUIP={notebook:'Notebook',desktop:'Computador de mesa',impressora:'Impressora'};
 var ART={notebook:'o seu notebook',desktop:'o seu computador',impressora:'a sua impressora'};
+var MODEL_TIP={notebook:['Ex.: IdeaPad 3, Inspiron 15','Fica numa etiqueta embaixo do notebook.'],impressora:['Ex.: L3250, DeskJet 2774','Fica na frente ou na tampa da impressora.'],desktop:['Ex.: OptiPlex 3080','Fica numa etiqueta no gabinete. Se for montado, pode pular.']};
 
 /* ---------- Estado ---------- */
-var A={}, steps=[], i=0;
+var A={}, steps=[], i=0, RET=0, busy=false;
 var body=document.querySelector('.tg-body'), back=document.querySelector('.tg-back'), bar=document.querySelector('.tg-prog i'), prog=document.querySelector('.tg-prog'), stepTxt=document.querySelector('.tg-step');
 
+function store(k,v){try{if(v==null)localStorage.removeItem(k);else localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function load(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
 function first(){return (A.nome||'').trim().split(/\s+/)[0]||'';}
-function fill(s){var e=A.equip?ART[A.equip]:'o seu equipamento';var n=first();
- return s.replace('{o_equip}',e).replace('{nome, }',n?n+', ':'');}
+function fill(s){return s.replace('{o_equip}',A.equip?ART[A.equip]:'o seu equipamento');}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function digits(v){var d=String(v||'').replace(/\D/g,'');if(d.length>11&&d.indexOf('55')===0)d=d.slice(2);return d.slice(0,11);}
+function fmtTel(v){var d=digits(v);
+ if(!d)return '';
+ if(d.length<=2)return '('+d;
+ if(d.length<=6)return '('+d.slice(0,2)+') '+d.slice(2);
+ if(d.length<=10)return '('+d.slice(0,2)+') '+d.slice(2,6)+'-'+d.slice(6);
+ return '('+d.slice(0,2)+') '+d.slice(2,7)+'-'+d.slice(7);}
 
 function build(){
  var p=PROBLEMS[A.prob];
- steps=[{id:'prob'},{id:'nome'}];
+ steps=[{id:'prob'}];
  if(!p||p.grp!=='imp') steps.push({id:'equip'});
- steps.push({id:'marca'},{id:'modelo'});
+ steps.push({id:'aparelho'});
  if(p) p.qs.forEach(function(q){steps.push({id:'q',q:q});});
- steps.push({id:'tempo'},{id:'quem'});
- if(!p||p.grp!=='imp') steps.push({id:'dados'});
- steps.push({id:'extra'},{id:'fim'});
+ steps.push({id:'tempo'},{id:'quem'},{id:'dados'},{id:'extra'},{id:'fim'});
 }
+function key(st){return st.id==='q'?'q:'+st.q.id:st.id;}
+function idx(k){for(var j=0;j<steps.length;j++)if(key(steps[j])===k)return j;return -1;}
 function visible(st){
  if(st.id==='q'&&st.q.only) return st.q.only.indexOf(A.equip)>-1;
- if(st.id==='marca'||st.id==='modelo') return !!A.equip;
+ if(st.id==='aparelho') return !!A.equip;
+ if(st.id==='dados') return A.equip!=='impressora';
  return true;
 }
-function go(d){do{i+=d;}while(steps[i]&&!visible(steps[i]));render();}
+function go(d){
+ if(d>0&&RET>0){RET--;if(!RET){i=idx('fim');render();return;}}
+ if(d<0)RET=0;
+ do{i+=d;}while(steps[i]&&!visible(steps[i]));
+ if(i<0)i=0;
+ render();
+}
+/* pequena pausa para a pessoa ver a opção marcada antes de avançar */
+function advance(){busy=true;setTimeout(function(){busy=false;go(1);},170);}
 
 function head(eyebrow,q,hint){
  return (eyebrow?'<p class="tg-eyebrow">'+esc(eyebrow)+'</p>':'')+'<h2 class="tg-q" tabindex="-1">'+esc(q)+'</h2>'+(hint?'<p class="tg-hint">'+esc(hint)+'</p>':'<div style="height:14px"></div>');
 }
-function opts(list,key,multi,idk,oneCol){
- var cur=A[key]; var h='<div class="tg-opts'+(oneCol?' one':'')+'">';
+function opts(list,k,multi,idk,oneCol){
+ var cur=A[k]; var h='<div class="tg-opts'+(oneCol?' one':'')+'">';
  list.forEach(function(o){var on=multi?(cur||[]).indexOf(o)>-1:cur===o;
-  h+='<button type="button" class="tg-opt" aria-pressed="'+on+'" data-v="'+esc(o)+'">'+(multi?'<span class="box"></span>':'')+esc(o)+'</button>';});
- if(idk) h+='<button type="button" class="tg-opt idk" aria-pressed="'+(cur===IDK)+'" data-v="'+IDK+'">'+IDK+'</button>';
+  h+='<button type="button" class="tg-opt'+(multi?'':' single')+'" aria-pressed="'+on+'" data-v="'+esc(o)+'">'+(multi?'<span class="box"></span>':'')+'<span>'+esc(o)+'</span></button>';});
+ if(idk) h+='<button type="button" class="tg-opt single idk" aria-pressed="'+(cur===IDK)+'" data-v="'+IDK+'"><span>'+IDK+'</span></button>';
  return h+'</div>';
 }
-function bindOpts(key,multi){
+function chips(list,cur,attr,lbl){
+ return '<div class="tg-chips" role="group" aria-labelledby="'+lbl+'">'+list.map(function(o){return '<button type="button" class="tg-chip" '+attr+' aria-pressed="'+(cur===o)+'" data-v="'+esc(o)+'">'+esc(o)+'</button>';}).join('')+'</div>';
+}
+function bindOpts(k,multi){
  body.querySelectorAll('.tg-opt').forEach(function(b){b.onclick=function(){
+  if(busy)return;
   var v=b.getAttribute('data-v');
-  if(multi){var a=A[key]||[];var k=a.indexOf(v);if(k>-1)a.splice(k,1);else a.push(v);A[key]=a;b.setAttribute('aria-pressed',k<0);var nb=body.querySelector('[data-next]');if(nb)nb.disabled=!a.length;}
-  else{A[key]=v;go(1);}
+  if(multi){var a=A[k]||[];var j=a.indexOf(v);if(j>-1)a.splice(j,1);else a.push(v);A[k]=a;b.setAttribute('aria-pressed',j<0);var nb=body.querySelector('[data-next]');if(nb)nb.disabled=!a.length;save();}
+  else{A[k]=v;body.querySelectorAll('.tg-opt').forEach(function(x){x.setAttribute('aria-pressed',x===b);});advance();}
  };});
 }
-function nextBtn(label,dis){return '<div class="tg-actions"><button type="button" class="tg-btn primary" data-next'+(dis?' disabled':'')+'>'+(label||'Continuar')+'</button></div>';}
+function actions(next,skip){return '<div class="tg-actions"><button type="button" class="tg-btn primary" data-next>'+(next||'Continuar')+'</button>'+(skip?'<button type="button" class="tg-btn ghost" data-skip>'+skip+'</button>':'')+'</div>';}
 function bindNext(fn){var b=body.querySelector('[data-next]');if(b)b.onclick=function(){if(fn&&fn()===false)return;go(1);};}
+function bindSkip(fn){var b=body.querySelector('[data-skip]');if(b)b.onclick=function(){if(fn)fn();go(1);};}
+function onEnter(el,fn,ctrl){el.addEventListener('keydown',function(e){if(e.key==='Enter'&&(!ctrl||e.ctrlKey||e.metaKey)){e.preventDefault();fn();}});}
+function setErr(input,errEl,msg){input.setAttribute('aria-invalid',msg?'true':'false');errEl.textContent=msg||'';}
+function save(){if(A.prob&&steps[i]&&steps[i].id!=='ok')store(SAVE_KEY,{A:A,i:i,t:Date.now()});}
 
 function render(){
- var st=steps[i]; var total=steps.filter(visible).length-1; var pos=steps.slice(0,i).filter(visible).length;
- var pct=st.id==='prob'?0:Math.min(100,Math.round(pos/total*100));
+ var st=steps[i]; var cnt=function(s){return s.id==='aparelho'||visible(s);}; var total=steps.filter(cnt).length-1; var pos=steps.slice(0,i).filter(cnt).length;
+ var pct=st.id==='prob'?0:st.id==='ok'?100:Math.min(100,Math.round(pos/total*100));
  bar.style.width=pct+'%';prog.setAttribute('aria-valuenow',pct);
- stepTxt.textContent=st.id==='prob'?'Leva cerca de 1 minuto':(st.id==='fim'||st.id==='ok'?'Último passo':'Pergunta '+pos+' de '+(total-1));
+ stepTxt.textContent=st.id==='prob'?'Leva cerca de 1 minuto':st.id==='ok'?'Enviado':st.id==='fim'?'Último passo':'Pergunta '+pos+' de '+(total-1);
  back.hidden=(i===0||st.id==='ok');
  var h='';
  if(st.id==='prob'){
   h=head('Pré-diagnóstico gratuito','Qual problema seu equipamento apresenta?','Escolha a opção mais parecida. Depois, algumas perguntas rápidas ajudam o técnico a entender o caso.');
+  var sv=load(SAVE_KEY);
+  var canResume=sv&&sv.A&&PROBLEMS[sv.A.prob]&&Date.now()-sv.t<3*864e5&&!A.prob;
+  if(canResume) h='<div class="tg-resume"><div><b>Continuar de onde parou?</b><span>Você começou um pré-diagnóstico: '+esc(PROBLEMS[sv.A.prob].t)+'.</span></div><div class="tg-resume-act"><button type="button" class="tg-btn primary sm" data-resume>Continuar</button><button type="button" class="tg-btn ghost" data-discard>Começar de novo</button></div></div>'+h;
   [['pc','Computador ou notebook'],['imp','Impressora'],['out','Outro']].forEach(function(g){
    h+='<p class="tg-group">'+g[1]+'</p><div class="tg-opts">';
    Object.keys(PROBLEMS).forEach(function(k){var p=PROBLEMS[k];if(p.grp!==g[0])return;
@@ -878,50 +935,53 @@ function render(){
    h+='</div>';});
   body.innerHTML=h;
   body.querySelectorAll('[data-p]').forEach(function(b){b.onclick=function(){
-   var k=b.getAttribute('data-p'); if(A.prob!==k){var n=A.nome;A={nome:n};A.prob=k;}
-   if(PROBLEMS[k].grp==='imp')A.equip='impressora'; else if(A.equip==='impressora')delete A.equip;
-   build();go(1);};});
- }
- else if(st.id==='nome'){
-  h=head('Vamos começar','Como podemos te chamar?','Opcional. Assim o nosso atendimento fica mais pessoal.');
-  h+='<input class="tg-input" id="tg-nome" autocomplete="given-name" placeholder="Seu nome" value="'+esc(A.nome||'')+'">';
-  h+='<div class="tg-actions"><button type="button" class="tg-btn primary" data-next>Continuar</button><button type="button" class="tg-btn ghost" data-skip>Pular</button></div>';
-  body.innerHTML=h;var inp=body.querySelector('#tg-nome');
-  inp.onkeydown=function(e){if(e.key==='Enter'){A.nome=inp.value.trim();go(1);}};
-  bindNext(function(){A.nome=inp.value.trim();});
-  body.querySelector('[data-skip]').onclick=function(){A.nome='';go(1);};
+   if(busy)return;
+   var k=b.getAttribute('data-p'); if(A.prob!==k){A={nome:A.nome,tel:A.tel,prob:k};}
+   if(PROBLEMS[k].grp==='imp')A.equip='impressora'; else if(PROBLEMS[k].grp==='pc'&&A.equip==='impressora')delete A.equip;
+   body.querySelectorAll('[data-p]').forEach(function(x){x.setAttribute('aria-pressed',x===b);});
+   build();advance();};});
+  if(canResume){
+   body.querySelector('[data-resume]').onclick=function(){A=sv.A;build();i=Math.max(1,Math.min(sv.i,steps.length-1));while(steps[i]&&!visible(steps[i]))i++;if(!steps[i])i=idx('fim');render();};
+   body.querySelector('[data-discard]').onclick=function(){store(SAVE_KEY,null);render();};
+  }
  }
  else if(st.id==='equip'){
-  body.innerHTML=head('',fill('{nome, }qual é o equipamento?').replace(/^./,function(c){return c.toUpperCase();}),'')+opts(['Notebook','Computador de mesa'],'_equip',0,0);
+  var list=['Notebook','Computador de mesa'];if(PROBLEMS[A.prob]&&PROBLEMS[A.prob].grp==='out')list.push('Impressora');
+  body.innerHTML=head(PROBLEMS[A.prob]?PROBLEMS[A.prob].t:'','Qual é o equipamento?','')+opts(list,'_equip',0,0);
   body.querySelectorAll('.tg-opt').forEach(function(b){b.setAttribute('aria-pressed',EQUIP[A.equip]===b.getAttribute('data-v'));b.onclick=function(){
-   A.equip=b.getAttribute('data-v')==='Notebook'?'notebook':'desktop';delete A.marca;go(1);};});
+   if(busy)return;
+   var v=b.getAttribute('data-v'),k=v==='Notebook'?'notebook':v==='Impressora'?'impressora':'desktop';
+   if(A.equip!==k){A.equip=k;delete A.marca;}
+   body.querySelectorAll('.tg-opt').forEach(function(x){x.setAttribute('aria-pressed',x===b);});advance();};});
  }
- else if(st.id==='marca'){
-  body.innerHTML=head('Marca e modelo','Qual é a marca '+(A.equip==='impressora'?'da impressora':'do '+(A.equip==='notebook'?'notebook':'computador'))+'?','Opcional. Ajuda a separar a peça certa, se for preciso.')+opts(BRANDS[A.equip],'marca',0,1);
-  bindOpts('marca',0);
- }
- else if(st.id==='modelo'){
-  var dica=A.equip==='notebook'?'Fica numa etiqueta embaixo do notebook. Exemplo: IdeaPad 3, Inspiron 15.':A.equip==='impressora'?'Fica na frente ou na tampa da impressora. Exemplo: L3250, DeskJet 2774.':'Fica numa etiqueta no gabinete. Se for montado, pode pular.';
-  h=head('Marca e modelo','Sabe o modelo?',dica);
-  h+='<input class="tg-input" id="tg-mod" placeholder="Modelo (opcional)" value="'+esc(A.modelo||'')+'">';
-  h+='<div class="tg-actions"><button type="button" class="tg-btn primary" data-next>Continuar</button><button type="button" class="tg-btn ghost" data-skip>Não sei o modelo</button></div>';
+ else if(st.id==='aparelho'){
+  var nome=A.equip==='impressora'?'da impressora':A.equip==='notebook'?'do notebook':'do computador';
+  var tip=MODEL_TIP[A.equip]||['',''];
+  h=head('Marca e modelo','Qual é a marca e o modelo '+nome+'?','Opcional. Ajuda a separar a peça certa, se for preciso.');
+  h+='<p class="tg-label" id="lb-marca">Marca</p>'+chips(BRANDS[A.equip]||[],A.marca,'data-marca','lb-marca');
+  h+='<label class="tg-label" for="tg-mod">Modelo <span class="opt">(opcional)</span></label><input class="tg-input" id="tg-mod" autocomplete="off" enterkeyhint="next" placeholder="'+esc(tip[0])+'" aria-describedby="tg-mod-h" value="'+esc(A.modelo||'')+'"><p class="tg-help" id="tg-mod-h">'+esc(tip[1])+'</p>';
+  h+=actions('Continuar','Não sei, pular');
   body.innerHTML=h;var m=body.querySelector('#tg-mod');
-  m.onkeydown=function(e){if(e.key==='Enter'){A.modelo=m.value.trim();go(1);}};
-  bindNext(function(){A.modelo=m.value.trim();});
-  body.querySelector('[data-skip]').onclick=function(){A.modelo='';go(1);};
+  body.querySelectorAll('[data-marca]').forEach(function(c){c.onclick=function(){var v=c.getAttribute('data-v');A.marca=A.marca===v?undefined:v;body.querySelectorAll('[data-marca]').forEach(function(x){x.setAttribute('aria-pressed',A.marca===x.getAttribute('data-v'));});save();};});
+  var nx=function(){A.modelo=m.value.trim();go(1);};
+  onEnter(m,nx);bindNext(function(){A.modelo=m.value.trim();});
+  bindSkip(function(){delete A.marca;A.modelo='';});
  }
  else if(st.id==='q'){
   var q=st.q;var p=PROBLEMS[A.prob];
   h=head(p.t,fill(q.q),q.hint||'');
   if(q.text){
-   h+=(q.area?'<textarea class="tg-input" id="tg-t" placeholder="'+esc(q.ph||'')+'">'+esc(A[q.id]||'')+'</textarea>':'<input class="tg-input" id="tg-t" placeholder="'+esc(q.ph||'')+'" value="'+esc(A[q.id]||'')+'">');
-   h+='<div class="tg-actions"><button type="button" class="tg-btn primary" data-next>Continuar</button>'+(q.req?'':'<button type="button" class="tg-btn ghost" data-skip>Pular</button>')+'</div>';
-   body.innerHTML=h;var t=body.querySelector('#tg-t');
-   bindNext(function(){var v=t.value.trim();if(q.req&&!v){t.focus();return false;}A[q.id]=v;});
-   var sk=body.querySelector('[data-skip]');if(sk)sk.onclick=function(){A[q.id]='';go(1);};
+   h+=(q.area?'<textarea class="tg-input" id="tg-t" placeholder="'+esc(q.ph||'')+'" aria-describedby="tg-t-e">'+esc(A[q.id]||'')+'</textarea>':'<input class="tg-input" id="tg-t" enterkeyhint="next" placeholder="'+esc(q.ph||'')+'" aria-describedby="tg-t-e" value="'+esc(A[q.id]||'')+'">');
+   h+='<p class="tg-err" id="tg-t-e" aria-live="polite"></p>'+actions('Continuar',q.req?'':'Pular');
+   body.innerHTML=h;var t=body.querySelector('#tg-t'),te=body.querySelector('#tg-t-e');
+   var ok=function(){var v=t.value.trim();if(q.req&&v.length<5){setErr(t,te,'Conte um pouco do problema para o técnico entender o caso.');t.focus();return false;}A[q.id]=v;};
+   bindNext(ok);onEnter(t,function(){if(ok()!==false)go(1);},!!q.area);
+   t.addEventListener('input',function(){if(t.getAttribute('aria-invalid')==='true'&&t.value.trim().length>=5)setErr(t,te,'');});
+   bindSkip(function(){A[q.id]='';});
   }else if(q.m){
-   h+=opts(q.o,q.id,1,q.idk,0)+nextBtn('Continuar',!(A[q.id]||[]).length);
+   h+=opts(q.o,q.id,1,q.idk,0)+actions('Continuar')+'<p class="tg-help">Marque uma ou mais opções.</p>';
    body.innerHTML=h;bindOpts(q.id,1);bindNext();
+   body.querySelector('[data-next]').disabled=!(A[q.id]||[]).length;
   }else{
    body.innerHTML=h+opts(q.o,q.id,0,q.idk,q.one);bindOpts(q.id,0);
   }
@@ -936,76 +996,95 @@ function render(){
   body.innerHTML=head('Quase lá','Tem arquivos importantes nele?','Fotos, documentos, trabalhos. Se tiver, cuidamos para não perder nada.')+opts(['Sim, preciso guardar','Não tem nada importante','Já tenho cópia (backup)'],'dados',0,1);bindOpts('dados',0);
  }
  else if(st.id==='extra'){
-  h=head('Última pergunta','Quer contar mais alguma coisa?','Opcional. Qualquer detalhe ajuda o técnico.');
+  h=head('Opcional','Quer contar mais alguma coisa?','Qualquer detalhe ajuda o técnico.');
   h+='<textarea class="tg-input" id="tg-x" placeholder="Exemplo: já levei em outro lugar, o problema aparece só à noite...">'+esc(A.extra||'')+'</textarea>';
-  h+='<div class="tg-actions"><button type="button" class="tg-btn primary" data-next>Ver resumo</button><button type="button" class="tg-btn ghost" data-skip>Pular</button></div>';
+  h+=actions('Continuar','Pular');
   body.innerHTML=h;var x=body.querySelector('#tg-x');
-  bindNext(function(){A.extra=x.value.trim();});body.querySelector('[data-skip]').onclick=function(){go(1);};
+  bindNext(function(){A.extra=x.value.trim();});onEnter(x,function(){A.extra=x.value.trim();go(1);},true);
+  bindSkip();
  }
  else if(st.id==='fim'){
-  var rows=summary();
-  h=head('Pronto'+(first()?', '+first():'')+'!','Confira e envie seu pré-diagnóstico','Deixe seu WhatsApp para o técnico te dar o retorno.');
-  h+='<div class="tg-sum"><dl>'+rows.map(function(r){return '<dt>'+esc(r[0])+'</dt><dd>'+esc(r[1])+'</dd>';}).join('')+'</dl></div>';
-  h+='<form id="tg-form" novalidate><label class="tg-label" for="c-nome">Nome</label><input class="tg-input" id="c-nome" autocomplete="name" required value="'+esc(A.nome||'')+'">';
-  h+='<label class="tg-label" for="c-tel">Seu WhatsApp</label><input class="tg-input" id="c-tel" type="tel" inputmode="tel" autocomplete="tel" placeholder="(91) 90000-0000" required value="'+esc(A.tel||'')+'">';
-  h+='<p class="tg-label">Melhor horário para retorno</p>'+opts(['Manhã','Tarde','Qualquer horário'],'hora',0,0);
-  h+='<label class="tg-check"><input type="checkbox" id="c-ok"'+(A.ok?' checked':'')+'> <span>Concordo que a Sanaythle Informática use estes dados apenas para responder a este atendimento.</span></label>';
-  h+='<p id="c-err" class="tg-small" style="color:#B91C1C" role="alert"></p>';
-  h+='<div class="tg-actions"><button type="submit" class="tg-btn tg-wa"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"/></svg>Enviar para a Sanaythle</button></div>';
-  h+='<p class="tg-small">Ao enviar, a Sanaythle recebe suas respostas por e-mail e o WhatsApp abre com a mensagem pronta. É só tocar em enviar lá também.</p></form>';
+  if(!A.nome&&!A.tel){var c=load(CONTACT_KEY);if(c){A.nome=c.n||'';A.tel=c.t||'';}}
+  var rows=summary().filter(function(r){return r[0]!=='Nome';});
+  h=head('Último passo','Para onde o técnico envia o retorno?','Ele analisa suas respostas e te chama no WhatsApp, de segunda a sexta, das 8h às 17h30.');
+  h+='<form id="tg-form" novalidate><div class="tg-fields">';
+  h+='<div><label class="tg-label" for="c-nome">Seu nome</label><input class="tg-input" id="c-nome" autocomplete="name" autocapitalize="words" enterkeyhint="next" aria-describedby="e-nome" value="'+esc(A.nome||'')+'"><p class="tg-err" id="e-nome" aria-live="polite"></p></div>';
+  h+='<div><label class="tg-label" for="c-tel">Seu WhatsApp, com DDD</label><input class="tg-input" id="c-tel" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="(91) 90000-0000" enterkeyhint="done" aria-describedby="e-tel" value="'+esc(fmtTel(A.tel||''))+'"><p class="tg-err" id="e-tel" aria-live="polite"></p></div>';
+  h+='</div><p class="tg-label" id="lb-hora">Melhor horário para o retorno <span class="opt">(opcional)</span></p>'+chips(['Manhã','Tarde','Qualquer horário'],A.hora,'data-hora','lb-hora');
+  h+='<details class="tg-sum"><summary>Conferir suas respostas <span>('+rows.length+')</span></summary><dl>'+rows.map(function(r){return '<div class="tg-row"><dt>'+esc(r[0])+'</dt><dd>'+esc(r[1])+'</dd>'+(r[2]?'<button type="button" class="tg-edit" data-edit="'+esc(r[2])+'" aria-label="Alterar '+esc(r[0])+'">Alterar</button>':'')+'</div>';}).join('')+'</dl></details>';
+  h+='<label class="tg-check"><input type="checkbox" id="c-ok"'+(A.ok?' checked':'')+' aria-describedby="e-ok"> <span>Concordo que a Sanaythle Informática use estes dados apenas para responder a este atendimento.</span></label><p class="tg-err" id="e-ok" aria-live="polite"></p>';
+  h+='<div class="tg-actions"><button type="submit" class="tg-btn tg-wa tg-send">'+WA_SVG+'<span>Enviar pré-diagnóstico</span></button></div>';
+  h+='<p class="tg-small">Ao enviar, a Sanaythle recebe suas respostas e o WhatsApp abre com a mensagem pronta. É só tocar em enviar lá também.</p></form>';
   body.innerHTML=h;
-  body.querySelectorAll('.tg-opt').forEach(function(b){b.onclick=function(){A.hora=b.getAttribute('data-v');body.querySelectorAll('.tg-opt').forEach(function(x){x.setAttribute('aria-pressed',x===b);});};});
+  var fn=body.querySelector('#c-nome'),ft=body.querySelector('#c-tel'),fo=body.querySelector('#c-ok'),en=body.querySelector('#e-nome'),et=body.querySelector('#e-tel'),eo=body.querySelector('#e-ok');
+  var vNome=function(){var v=fn.value.trim();return v.length<2?'Escreva seu nome.':'';};
+  var vTel=function(){var n=digits(ft.value).length;return !n?'Escreva seu WhatsApp com DDD.':(n<10?'Número incompleto. Use o DDD, por exemplo (91) 98888-9480.':'');};
+  var keep=function(){A.nome=fn.value.trim();A.tel=ft.value.trim();A.ok=fo.checked;save();};
+  ft.addEventListener('input',function(){var end=ft.selectionStart===ft.value.length;ft.value=fmtTel(ft.value);if(end)ft.setSelectionRange(ft.value.length,ft.value.length);if(ft.getAttribute('aria-invalid')==='true'&&!vTel())setErr(ft,et,'');keep();});
+  ft.addEventListener('blur',function(){if(ft.value)setErr(ft,et,vTel());});
+  fn.addEventListener('input',function(){if(fn.getAttribute('aria-invalid')==='true'&&!vNome())setErr(fn,en,'');keep();});
+  fn.addEventListener('blur',function(){if(fn.value)setErr(fn,en,vNome());});
+  onEnter(fn,function(){ft.focus();});
+  fo.addEventListener('change',function(){if(fo.checked)setErr(fo,eo,'');keep();});
+  body.querySelectorAll('[data-hora]').forEach(function(c){c.onclick=function(){var v=c.getAttribute('data-v');A.hora=A.hora===v?undefined:v;body.querySelectorAll('[data-hora]').forEach(function(x){x.setAttribute('aria-pressed',A.hora===x.getAttribute('data-v'));});save();};});
+  body.querySelectorAll('[data-edit]').forEach(function(b){b.onclick=function(){keep();var k=b.getAttribute('data-edit');var j=idx(k);if(j<0)return;RET=k==='prob'?0:(k==='equip'?2:1);i=j;render();};});
   body.querySelector('#tg-form').onsubmit=function(e){e.preventDefault();
-   var n=body.querySelector('#c-nome').value.trim(),t=body.querySelector('#c-tel').value.trim(),ok=body.querySelector('#c-ok').checked,err=body.querySelector('#c-err');
-   A.nome=n;A.tel=t;A.ok=ok;
-   if(!n){err.textContent='Escreva seu nome.';return;} if(t.replace(/\D/g,'').length<10){err.textContent='Escreva seu WhatsApp com DDD.';return;} if(!ok){err.textContent='Marque a caixa de concordância para enviar.';return;}
+   keep();
+   var a=vNome(),b=vTel(),c=fo.checked?'':'Marque esta caixa para podermos te responder.';
+   setErr(fn,en,a);setErr(ft,et,b);setErr(fo,eo,c);
+   var bad=a?fn:b?ft:c?fo:null;if(bad){bad.focus();return;}
+   store(CONTACT_KEY,{n:A.nome,t:A.tel});
+   var sb=body.querySelector('.tg-send');sb.disabled=true;sb.querySelector('span').textContent='Enviando…';
    send();};
  }
  else if(st.id==='ok'){
-  body.innerHTML='<div class="tg-ok tg-anim"><div class="ic"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg></div>'+head('Protocolo '+A.proto,'Pré-diagnóstico enviado!','Um técnico da Sanaythle vai analisar as suas respostas e te chamar no WhatsApp '+esc(A.tel)+(A.hora&&A.hora!=='Qualquer horário'?', no período da '+A.hora.toLowerCase():'')+'. Atendimento de segunda a sexta, das 8h às 17h30.')+'<div class="tg-actions" style="justify-content:center"><a class="tg-btn tg-wa" href="'+A.link+'" target="_blank" rel="noopener">Abrir o WhatsApp de novo</a><button type="button" class="tg-btn outline" data-restart>Fazer outro pré-diagnóstico</button></div><p class="tg-small">Se o WhatsApp não abriu, toque em "Abrir o WhatsApp de novo" e envie a mensagem.</p>'+(window.TG_PREVIEW?'<p class="tg-small">Prévia: no site publicado, as respostas também chegam no e-mail da Sanaythle.</p>':'')+'</div>';
-  body.querySelector('[data-restart]').onclick=function(){A={};i=0;steps=[{id:'prob'}];render();};
+  body.innerHTML='<div class="tg-ok tg-anim"><div class="ic"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg></div>'+head('Protocolo '+A.proto,'Pré-diagnóstico enviado'+(first()?', '+first():'')+'!','Um técnico da Sanaythle vai analisar as suas respostas e te chamar no WhatsApp '+fmtTel(A.tel)+(A.hora&&A.hora!=='Qualquer horário'?', no período da '+A.hora.toLowerCase():'')+'. Atendimento de segunda a sexta, das 8h às 17h30.')+'<div class="tg-actions" style="justify-content:center"><a class="tg-btn tg-wa" href="'+A.link+'" target="_blank" rel="noopener">'+WA_SVG+'Abrir o WhatsApp de novo</a><button type="button" class="tg-btn outline" data-restart>Fazer outro pré-diagnóstico</button></div><p class="tg-small">Se o WhatsApp não abriu, toque em "Abrir o WhatsApp de novo" e envie a mensagem.</p>'+(window.TG_PREVIEW?'<p class="tg-small">Prévia: no site publicado, as respostas também chegam no e-mail da Sanaythle.</p>':'')+'</div>';
+  body.querySelector('[data-restart]').onclick=function(){A={nome:A.nome,tel:A.tel};i=0;steps=[{id:'prob'}];render();};
  }
- body.firstElementChild&&body.classList.remove('tg-anim');void body.offsetWidth;body.classList.add('tg-anim');
- var hq=body.querySelector('.tg-q');if(hq&&st.id!=='prob'){hq.focus({preventScroll:true});var c=document.querySelector('.tg-card');var r=c.getBoundingClientRect();if(r.top<70||r.top>window.innerHeight*.5)window.scrollTo({top:window.scrollY+r.top-90,behavior:'smooth'});}
+ save();
+ body.classList.remove('tg-anim');void body.offsetWidth;body.classList.add('tg-anim');
+ var hq=body.querySelector('.tg-q');if(hq&&st.id!=='prob'){hq.focus({preventScroll:true});var cd=document.querySelector('.tg-card');var r=cd.getBoundingClientRect();if(r.top<70||r.top>window.innerHeight*.5)window.scrollTo({top:window.scrollY+r.top-90,behavior:'smooth'});}
 }
 
 function summary(){
  var p=PROBLEMS[A.prob],r=[];
  if(A.nome)r.push(['Nome',A.nome]);
  var eq=[EQUIP[A.equip]||'',A.marca&&A.marca!==IDK&&A.marca!=='Outra'?A.marca:'',A.modelo||''].filter(Boolean).join(' ');
- r.push(['Equipamento',eq||'Não informado']);
- r.push(['Problema',p?p.t:'']);
- if(p)p.qs.forEach(function(q){var v=A[q.id];if(q.only&&q.only.indexOf(A.equip)<0)return;if(v&&(!Array.isArray(v)||v.length))r.push([q.k,Array.isArray(v)?v.join(', '):v]);});
- if(A.tempo)r.push(['Desde quando',A.tempo]);
- if(A.quem)r.push(['Uso',A.quem]);
- if(A.dados)r.push(['Arquivos importantes',A.dados]);
- if(A.extra)r.push(['Observações',A.extra]);
+ r.push(['Equipamento',eq||'Não informado',idx('equip')>-1?'equip':'aparelho']);
+ r.push(['Problema',p?p.t:'','prob']);
+ if(p)p.qs.forEach(function(q){var v=A[q.id];if(q.only&&q.only.indexOf(A.equip)<0)return;if(v&&(!Array.isArray(v)||v.length))r.push([q.k,Array.isArray(v)?v.join(', '):v,'q:'+q.id]);});
+ if(A.tempo)r.push(['Desde quando',A.tempo,'tempo']);
+ if(A.quem)r.push(['Uso',A.quem,'quem']);
+ if(A.dados&&A.equip!=='impressora')r.push(['Arquivos importantes',A.dados,'dados']);
+ if(A.extra)r.push(['Observações',A.extra,'extra']);
  return r;
 }
 function waLink(rows){
  var t='*Pré-diagnóstico pelo site – Sanaythle*\n\n'+rows.map(function(r){return '*'+r[0]+':* '+r[1];}).join('\n');
  return 'https://wa.me/'+WA_NUM+'?text='+encodeURIComponent(t);
 }
-function fullRows(){var r=summary();r.push(['WhatsApp do cliente',A.tel]);if(A.hora)r.push(['Melhor horário',A.hora]);return r;}
+function fullRows(){var r=summary();r.push(['WhatsApp do cliente',fmtTel(A.tel)]);if(A.hora)r.push(['Melhor horário',A.hora]);return r;}
 function b64(o){var u=new TextEncoder().encode(JSON.stringify(o)),b='';for(var k=0;k<u.length;k++)b+=String.fromCharCode(u[k]);return btoa(b).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
 function send(){
  var now=new Date(),pad=function(x){return ('0'+x).slice(-2);};
  var proto='PD-'+String(now.getFullYear()).slice(2)+pad(now.getMonth()+1)+pad(now.getDate())+'-'+pad(now.getHours())+pad(now.getMinutes())+Math.floor(10+Math.random()*90);
+ var tel=fmtTel(A.tel);
  var rows=summary(), skip={'Nome':1,'Equipamento':1,'Problema':1,'Observações':1,'Desde quando':1,'Uso':1};
  var ans=rows.filter(function(r){return !skip[r[0]];});
  var get=function(k){for(var j=0;j<rows.length;j++)if(rows[j][0]===k)return rows[j][1];return '';};
- var D={p:proto,d:now.toISOString(),n:A.nome,t:A.tel,h:A.hora||'',u:get('Uso'),e:get('Equipamento'),pr:get('Problema'),q:get('Desde quando'),r:ans,o:A.extra||''};
+ var D={p:proto,d:now.toISOString(),n:A.nome,t:tel,h:A.hora||'',u:get('Uso'),e:get('Equipamento'),pr:get('Problema'),q:get('Desde quando'),r:ans.map(function(r){return [r[0],r[1]];}),o:A.extra||''};
  var ficha=location.origin+'/ficha.html#'+b64(D);
  var wrows=[['Protocolo',proto]].concat(fullRows());
  var link=waLink(wrows);
- var data={'form-name':'pre-diagnostico',Protocolo:proto,Cliente:A.nome,WhatsApp:A.tel,Horario:A.hora||'Qualquer horário',Equipamento:D.e,Problema:D.pr+(D.q?' (desde: '+D.q+')':''),Respostas:ans.map(function(r){return '• '+r[0]+': '+r[1];}).join('\n')+(D.u?'\n• Uso: '+D.u:''),Observacoes:D.o||'Nenhuma',Ficha:ficha};
+ var data={'form-name':'pre-diagnostico',Protocolo:proto,Cliente:A.nome,WhatsApp:tel,Horario:A.hora||'Qualquer horário',Equipamento:D.e,Problema:D.pr+(D.q?' (desde: '+D.q+')':''),Respostas:ans.map(function(r){return '• '+r[0]+': '+r[1];}).join('\n')+(D.u?'\n• Uso: '+D.u:''),Observacoes:D.o||'Nenhuma',Ficha:ficha};
  var enc=Object.keys(data).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(data[k]);}).join('&');
  if(!window.TG_PREVIEW){try{fetch(/netlify\.app$/.test(location.hostname)?'/':'/api/pre-diagnostico',{method:'POST',keepalive:true,headers:{'Content-Type':'application/x-www-form-urlencoded'},body:enc}).catch(function(){});}catch(x){}}
  A.link=link;A.proto=proto;window.TG_LAST_FICHA=ficha; try{window.open(link,'_blank','noopener');}catch(x){}
+ store(SAVE_KEY,null);
  steps.splice(i+1,0,{id:'ok'});go(1);
 }
-back.onclick=function(){go(-1);};
-window.TG_START=function(k){A={prob:k};if(PROBLEMS[k].grp==='imp')A.equip='impressora';build();i=0;go(1);};
+back.onclick=function(){if(!busy)go(-1);};
+window.TG_START=function(k){A={nome:A.nome,tel:A.tel,prob:k};if(PROBLEMS[k].grp==='imp')A.equip='impressora';build();i=0;go(1);};
 window.TG_PREVIEW=location.protocol==='file:'||/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
 steps=[{id:'prob'}];render();
 })();
